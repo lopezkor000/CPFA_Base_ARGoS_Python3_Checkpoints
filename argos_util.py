@@ -3,22 +3,23 @@ import numpy as np
 import copy
 import csv
 import argparse
-import pdb
+# import pdb
 
 
 LINUX_CONTROLLER_LIB = "build/controllers/libiAnt_controller.so"
 MAC_CONTROLLER_LIB = "build/controllers/libiAnt_controller.dylib"
 LINUX_LOOP_LIB = "build/loop_functions/libiAnt_loop_functions.so"
 MAC_LOOP_LIB = "build/loop_functions/libiAnt_loop_functions.dylib"
-    
+
+# TODO: change parameters
 PARAMETER_LIMITS = {
     "RateOfLayingPheromone": (0, 20),
-    "RateOfPheromoneDecay": (0, 1), #qilu 04/25 the sampled maximum 0.99 in 5000. The mean is 0.1 03/27/2016 exponential distribtion
+    "RateOfPheromoneDecay": np.random.exponential(1/10), #qilu 04/25 the sampled maximum 0.99 in 5000. The mean is 0.1 03/27/2016 exponential distribtion
     "ProbabilityOfSwitchingToSearching": (0, 1),
     "RateOfSiteFidelity": (0, 20),
-    "RateOfInformedSearchDecay": (0, 2), #qilu 04/25 the sampled maximum is around 2.0,  03/27/2016 exponential distribtion
-    "ProbabilityOfReturningToNest": (0, 0.05),
-    "UninformedSearchVariation": (0, 90)
+    "RateOfInformedSearchDecay": np.random.exponential(1/5), #qilu 04/25 the sampled maximum is around 2.0,  03/27/2016 exponential distribtion
+    "ProbabilityOfReturningToNest": (0, 1),
+    "UninformedSearchVariation": (0, 4*np.pi)
 }
 
 def load_xml_default(xml_file):
@@ -240,8 +241,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     gen_file = args.gen_file
-    robots='10'
-    length='300'
+    robots='24'
+    length='720'
     sradius='1'
     system='linux'
 

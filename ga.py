@@ -403,7 +403,7 @@ if __name__ == "__main__":
     parser.add_argument('-rf', '--resume_file', action='store', dest='resume_file', help='Path to a .pkl checkpoint file')
     ###(C.G.)
     pop_size = 50
-    gens = 100
+    gens = 150
     elites = 1
     mut_rate = 0.05
     robots = 24  #robots = 16
