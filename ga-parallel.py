@@ -178,7 +178,7 @@ class iAntGA(object):
             return self.test_fitness(xml_copy, seed)
         except Exception:
             logging.exception("Fitness evaluation failed")
-            return 0
+            return 0, "Fitness evaluation failed"
 
     # (4/19/2026) Charles Galperin
     # Save-and-continue functionality for long-running experimental workflows.
@@ -257,9 +257,13 @@ class iAntGA(object):
         lines = argos_run.stdout.readlines()
         if os.path.exists(tmpf.name):
             os.unlink(tmpf.name)
-        printTime(lines[-1])
-        logging.info("partial fitness = %f", float(lines[-1].strip().split(",")[0]))
-        return float(lines[-1].strip().split(",")[0])
+        
+        # The last line of the output is the fitness
+        fitness_line = lines[-1].strip()
+        fitness_value = float(fitness_line.split(",")[0])
+        
+        # Return the raw fitness value and the full line for detailed logging
+        return fitness_value, fitness_line
 
     def run_ga(self):
         # (4/19/2026) Charles Galperin
@@ -294,10 +298,10 @@ class iAntGA(object):
         for island_id, island in enumerate(self.islands):
             island.fitness = np.zeros(island.pop_size)
             for i, p in enumerate(island.population):
-                printTime("Gen: "+str(self.current_gen)+"; Island: "+str(island_id+1)+"; Population: "+str(i+1))
                 if island.not_evolved_idx[i] == -1 or island.not_evolved_count[i] > 3:
                     island.not_evolved_count[i] = 0
-                    for seed in seeds:
+                    for task_id, seed in enumerate(seeds):
+                        printTime(f"Gen: {self.current_gen}; Island: {island_id + 1}; Population: {i + 1}; Task: {task_id + 1}/{self.tests_per_gen}")
                         tasks.append((island_id, i, p, seed))
                 else: #qilu 03/27/2016 avoid recompute
                     island.fitness[i] = island.prev_fitness[island.not_evolved_idx[i]] * self.tests_per_gen
@@ -306,13 +310,14 @@ class iAntGA(object):
         if tasks:
             with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
                 future_map = {}
-                for island_id, i, p, seed in tasks:
+                for task_id, (island_id, i, p, seed) in enumerate(tasks):
                     future = executor.submit(self._evaluate_fitness_task, p, seed)
-                    future_map[future] = (island_id, i)
+                    future_map[future] = (island_id, i, task_id)
                 for future in as_completed(future_map):
-                    island_id, i = future_map[future]
+                    island_id, i, task_id = future_map[future]
                     try:
-                        score = future.result()
+                        score, fitness_line = future.result()
+                        printTime(f"Completed - Gen: {self.current_gen}; Island: {island_id + 1}; Pop: {i + 1}; Task: {task_id + 1}/{len(tasks)}; Result: {fitness_line}")
                     except Exception:
                         logging.exception("Fitness task failed for island %d pop %d", island_id, i)
                         score = 0
@@ -527,7 +532,7 @@ if __name__ == "__main__":
     elites = 1
     mut_rate = 0.05
     robots = 24  #robots = 16
-    tags=384 #qilu 03/26 for naming the output directory
+    tags=256 #qilu 03/26 for naming the output directory
     system = "linux"
     length = 720 # 12 minutes, length is in second. default length = 3600
     tests_per_gen= 10
